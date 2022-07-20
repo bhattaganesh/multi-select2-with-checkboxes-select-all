@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Select2 with checkboxes</title>
+    <!-- Select2 CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css"
+      rel="stylesheet"
+    />
+  </head>
+
+  <body>
+    <select
+      class="select2-multiple"
+      multiple="multiple"
+      style="width: 300px"
+    >
+      <option value="0" disabled>Select All</option>
+      <option value="JAN">January</option>
+      <option value="FEB">February</option>
+      <option value="MAR">March</option>
+      <option value="APR">April</option>
+      <option value="MAY">May</option>
+      <option value="JUN">June</option>
+      <option value="JUL">July</option>
+      <option value="AUG">August</option>
+      <option value="SEP">September</option>
+      <option value="OCT">October</option>
+      <option value="NOV">November</option>
+      <option value="DEC">December</option>
+    </select><br /><br /><br /><br /><br /><br /><br /><br />
+
+    <!-- Second Select -->
+
+    <select
+      class="select2-multiple"
+      multiple="multiple"
+      style="width: 300px"
+    >
+      <option value="0" disabled>Select All</option>
+      <option value="JAN">Sunday</option>
+      <option value="FEB">Monday</option>
+      <option value="MAR">Tuesday</option>
+      <option value="APR">Wednesday</option>
+      <option value="MAY">Thursday</option>
+      <option value="JUN">Friday</option>
+      <option value="JUL">Saturday</option>
+    </select><br /><br /><br /><br /><br /><br /><br /><br />
+
+
+    <select
+    class="select2-multiple"
+    multiple="multiple"
+    style="width: 300px" 
+    >
+    <option value="0" disabled>Select All</option>  
+      <option value="volvo">Volvo</option>
+      <option value="saab">Saab</option>
+      <option value="mercedes">Mercedes</option>
+      <option value="audi">Audi</option>
+    </select>
+
+    <!-- jQuery -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <!-- Select2 -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script>
+    var SelectionAdapter, DropdownAdapter;
+
+    $.fn.select2.amd.require(
+        [
+            "select2/selection/single",
+            "select2/selection/placeholder",
+            "select2/dropdown",
+            "select2/dropdown/search",
+            "select2/dropdown/attachBody",
+            "select2/utils",
+            "select2/selection/eventRelay",
+        ],
+        function (
+            SingleSelection,
+            Placeholder,
+            Dropdown,
+            DropdownSearch,
+            AttachBody,
+            Utils,
+            EventRelay
+        ) {
+            // Allow to flow/fire events
+            SelectionAdapter = Utils.Decorate(SingleSelection, Placeholder);
+            SelectionAdapter = Utils.Decorate(SelectionAdapter, EventRelay);
+
+            // Add search box in dropdown
+            DropdownAdapter = Utils.Decorate(Dropdown, DropdownSearch);
+
+            // Add attach-body in dropdown
+            DropdownAdapter = Utils.Decorate(DropdownAdapter, AttachBody);
+
+            $(document).ready(function () {
+                var allSelect2 = $(document.body).find(".select2-multiple");
+
+                if (0 === allSelect2.length) {
+                    return;
+                }
+
+                allSelect2.each(function () {
+                    var $this = $(this);
+
+                    var Select2MultiCheckBoxObj = [],
+                        staticWordInID = "select2_item_chk_",
+                        $select2 = null;
+
+                    $.map($this.find("option"), function (option) {
+                        AddItemInSelect2MultiCheckBoxObj(option.value, false);
+                    });
+
+                    function formatResult(state) {
+                        if (Select2MultiCheckBoxObj.length > 0) {
+                            var stateId = staticWordInID + state.id;
+                            let index = Select2MultiCheckBoxObj.findIndex(
+                                (x) => x.id == state.id
+                            );
+                            if (index > -1) {
+                                var checkbox = $(
+                                    '<div class="checkbox"><input class="select2Checkbox" id="' +
+                                    stateId +
+                                    '" type="checkbox" ' +
+                                    (Select2MultiCheckBoxObj[index]["IsChecked"]
+                                        ? "checked"
+                                        : "") +
+                                    '><label for="' +
+                                    stateId +
+                                    '">' +
+                                    state.text +
+                                    "</label></div>",
+                                    { id: stateId }
+                                );
+                                return checkbox;
+                            }
+                        }
+                    }
+
+                    let optionSelect2 = {
+                        templateResult: formatResult,
+                        closeOnSelect: false,
+                        width: "100%",
+                        minimumResultsForSearch: -1,
+                        placeholder: $this.attr("placeholder") || "Select Option(s)",
+                        selectionAdapter: SelectionAdapter,
+                        dropdownAdapter: DropdownAdapter,
+                        templateSelection: function (data) {
+                            if (!data.id) {
+                                return data.text;
+                            }
+
+                            var selected = $this.select2("data").length,
+                                total = $this.find("option").not(":first").length;
+
+                            return "Selected " + selected + " of " + total;
+                        },
+                    };
+                    $select2 = $this.select2(optionSelect2);
+
+                    var scrollTop;
+                    $select2.on("select2:selecting", function (event) {
+                        var $pr = $("#" + event.params.args.data._resultId).parent();
+                        scrollTop = $pr.prop("scrollTop");
+                    });
+
+                    $select2.on("select2:select", function (event) {
+                        $("#" + event.params.data._resultId)
+                            .find("#" + staticWordInID + event.params.data.id)
+                            .prop("checked", true);
+                        AddItemInSelect2MultiCheckBoxObj(event.params.data.id, true);
+
+                        if (
+                            Select2MultiCheckBoxObj.filter((x) => x.IsChecked === false)
+                                .length === 1
+                        ) {
+                            AddItemInSelect2MultiCheckBoxObj(0, true);
+                            $("#" + event.params.data._resultId)
+                                .find("#" + staticWordInID + "0")
+                                .prop("checked", true);
+                        }
+
+                        $("#" + event.params.data._resultId)
+                            .find('input[type="checkbox"]')
+                            .on("click", function () {
+                                $(this).prop("checked", true);
+                            });
+
+                        if (
+                            $this.select2("data").length ===
+                            $this.find("option").not(":first").length
+                        ) {
+                            $($select2.data("select2").$dropdown)
+                                .find(
+                                    "li.select2-results__option.select2-results__option--disabled #" +
+                                    staticWordInID +
+                                    "0"
+                                )
+                                .prop("checked", true);
+                        } else {
+                            $($select2.data("select2").$dropdown)
+                                .find(
+                                    "li.select2-results__option.select2-results__option--disabled #" +
+                                    staticWordInID +
+                                    "0"
+                                )
+                                .prop("checked", false);
+                        }
+                    });
+
+                    $select2.on("select2:unselect", function (event) {
+                        $("#" + event.params.data._resultId)
+                            .find("#" + staticWordInID + "0")
+                            .prop("checked", false);
+                        AddItemInSelect2MultiCheckBoxObj(0, false);
+                        $("#" + event.params.data._resultId)
+                            .find("#" + staticWordInID + event.params.data.id)
+                            .prop("checked", false);
+                        AddItemInSelect2MultiCheckBoxObj(event.params.data.id, false);
+
+                        $("#" + event.params.data._resultId)
+                            .find('input[type="checkbox"]')
+                            .on("click", function () {
+                                $(this).prop("checked", false);
+                            });
+
+                        if (
+                            $this.select2("data").length ===
+                            $this.find("option").not(":first").length
+                        ) {
+                            $($select2.data("select2").$dropdown)
+                                .find(
+                                    "li.select2-results__option.select2-results__option--disabled #" +
+                                    staticWordInID +
+                                    "0"
+                                )
+                                .prop("checked", true);
+                        } else {
+                            $($select2.data("select2").$dropdown)
+                                .find(
+                                    "li.select2-results__option.select2-results__option--disabled #" +
+                                    staticWordInID +
+                                    "0"
+                                )
+                                .prop("checked", false);
+                        }
+                    });
+
+                    $($select2.data("select2").$dropdown).on(
+                        "click",
+                        "li.select2-results__option.select2-results__option--disabled #" +
+                        staticWordInID +
+                        "0",
+                        function () {
+                            var b = $(this).is(":checked");
+                            IsCheckedAllOption(b);
+                        }
+                    );
+
+                    function AddItemInSelect2MultiCheckBoxObj(id, IsChecked) {
+                        if (Select2MultiCheckBoxObj.length > 0) {
+                            let index = Select2MultiCheckBoxObj.findIndex(
+                                (x) => x.id == id
+                            );
+                            if (index > -1) {
+                                Select2MultiCheckBoxObj[index]["IsChecked"] = IsChecked;
+                            } else {
+                                Select2MultiCheckBoxObj.push({
+                                    id: id,
+                                    IsChecked: IsChecked,
+                                });
+                            }
+                        } else {
+                            Select2MultiCheckBoxObj.push({
+                                id: id,
+                                IsChecked: IsChecked,
+                            });
+                        }
+                    }
+
+                    function IsCheckedAllOption(trueOrFalse) {
+                        $.map(
+                            $select2.data("select2").$element.find("option"),
+                            function (option) {
+                                AddItemInSelect2MultiCheckBoxObj(option.value, trueOrFalse);
+                            }
+                        );
+                        $select2
+                            .data("select2")
+                            .$element.find("option")
+                            .not(":first")
+                            .prop("selected", trueOrFalse);
+                        $($select2.data("select2").$dropdown)
+                            .find(".select2-results__option")
+                            .not(":first")
+                            .attr("aria-selected", trueOrFalse);
+
+                        $($select2.data("select2").$dropdown)
+                            .find(".select2-results__option")
+                            .not(":first")
+                            .each(function () {
+                                if ("true" === $(this).attr("aria-selected")) {
+                                    $(this).addClass("select2-results__option--selected");
+                                } else {
+                                    $(this).removeClass("select2-results__option--selected");
+                                }
+                            });
+
+                        $($select2.data("select2").$dropdown)
+                            .find("li.select2-results__option")
+                            .find("input[id^='" + staticWordInID + "']")
+                            .prop("checked", trueOrFalse);
+
+                        $select2.data("select2").$element.trigger("change");
+                    }
+                });
+            });
+        }
+    );
+
+    </script>
+  </body>
+</html>
